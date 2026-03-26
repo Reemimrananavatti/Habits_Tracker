@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habit Tracker</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+      margin: 0; padding: 20px;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh;
+    }
+    .tracker {
+      width: 100%; max-width: 1100px;
+      background: #fff; padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      overflow-x: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #d63384;
+      font-weight: 600;
+    }
+    table {
+      width: 100%; border-collapse: collapse;
+      min-width: 700px;
+    }
+    th, td {
+      border: 1px solid #f0c2d8;
+      padding: 12px; text-align: center;
+    }
+    th {
+      background: #ff69b4; color: #fff;
+      position: sticky; top: 0;
+    }
+    tr:nth-child(even) { background: #fff0f6; }
+    input[type="checkbox"] {
+      transform: scale(1.3);
+      cursor: pointer;
+      accent-color: #ff69b4;
+    }
+    canvas {
+      margin-top: 30px;
+      width: 100% !important;
+      max-height: 350px;
+    }
+  </style>
+</head>
+<body>
+  <div class="tracker">
+    <h1>🌸 Habit Tracker 🌸</h1>
+    <table id="habitTable">
+      <thead>
+        <tr id="dateRow">
+          <th>Habit</th>
+        </tr>
+      </thead>
+      <tbody id="habitBody">
+        <tr><td>Namaz, dua, tasbih</td></tr>
+        <tr><td>Surah Baqrah</td></tr>
+        <tr><td>Quran</td></tr>
+        <tr><td>Learn something Islamic new for 5 min</td></tr>
+        <tr><td>Health: yoga, breathing</td></tr>
+        <tr><td>Sleep: 6 hours at least</td></tr>
+        <tr><td>Study: daily complete 2 tasks</td></tr>
+        <tr><td>Son: food, play, bedtime stories</td></tr>
+        <tr><td>Husband: meals, emotional bonding with communication</td></tr>
+        <tr><td>Parents: daily check-in calls</td></tr>
+        <tr><td>In-laws: respectful communication</td></tr>
+        <tr><td>Plan next day before bed</td></tr>
+      </tbody>
+    </table>
+    <canvas id="progressChart"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const habits = [
+      "Namaz, dua, tasbih",
+      "Surah Baqrah",
+      "Quran",
+      "Learn something Islamic new for 5 min",
+      "Health: yoga, breathing",
+      "Sleep: 6 hours at least",
+      "Study: daily complete 2 tasks",
+      "Son: food, play, bedtime stories",
+      "Husband: meals, emotional bonding with communication",
+      "Parents: daily check-in calls",
+      "In-laws: respectful communication",
+      "Plan next day before bed"
+    ];
+
+    const habitBody = document.getElementById("habitBody");
+    const dateRow = document.getElementById("dateRow");
+
+    // Generate current week dates (Thursday to Thursday)
+    function getWeekDates() {
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0=Sunday, 4=Thursday
+      const thursday = new Date(today);
+      // Shift back to last Thursday
+      thursday.setDate(today.getDate() - ((dayOfWeek + 3) % 7));
+      let dates = [];
+      for (let i = 0; i < 7; i++) {
+        let d = new Date(thursday);
+        d.setDate(thursday.getDate() + i);
+        dates.push(d);
+      }
+      return dates;
+    }
+
+    const weekDates = getWeekDates();
+
+    // Build table headers
+    weekDates.forEach(d => {
+      const th = document.createElement("th");
+      th.textContent = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+      dateRow.appendChild(th);
+    });
+
+    // Build habit rows with checkboxes
+    habits.forEach((habit, i) => {
+      const row = habitBody.rows[i];
+      weekDates.forEach(d => {
+        const td = document.createElement("td");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.dataset.habit = habit;
+        checkbox.dataset.date = d.toDateString();
+        // Load saved state
+        if (localStorage.getItem(`${habit}-${d.toDateString()}`) === "true") {
+          checkbox.checked = true;
+        }
+        checkbox.addEventListener("change", () => {
+          localStorage.setItem(`${habit}-${d.toDateString()}`, checkbox.checked);
+          updateChart();
+        });
+        td.appendChild(checkbox);
+        row.appendChild(td);
+      });
+    });
+
+    // Chart.js gradient column chart
+    const ctx = document.getElementById("progressChart").getContext("2d");
+    let chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: habits,
+        datasets: [{
+          label: "Weekly Completion (%)",
+          data: Array(habits.length).fill(0),
+          backgroundColor: [
+            "rgba(255,105,180,0.8)",
+            "rgba(255,182,193,0.8)",
+            "rgba(255,192,203,0.8)",
+            "rgba(174,198,207,0.8)",
+            "rgba(255,160,122,0.8)",
+            "rgba(221,160,221,0.8)",
+            "rgba(135,206,250,0.8)",
+            "rgba(255,218,185,0.8)",
+            "rgba(255,228,225,0.8)",
+            "rgba(240,128,128,0.8)",
+            "rgba(255,250,205,0.8)",
+            "rgba(176,224,230,0.8)"
+          ],
+          borderRadius: 12,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.raw.toFixed(1) + "% completed";
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: { callback: value => value + "%" },
+            grid: { color: "rgba(220,220,220,0.3)" }
+          },
+          x: { grid: { display: false } }
+        },
+        animation: {
+          duration: 1200,
+          easing: "easeOutBounce"
+        }
+      }
+    });
+
+    function updateChart() {
+      habits.forEach((habit, i) => {
+        let completed = 0;
+        weekDates.forEach(d => {
+          if (localStorage.getItem(`${habit}-${d.toDateString()}`) === "true") {
+            completed++;
+          }
+        });
+        chart.data.datasets[0].data[i] = (completed / weekDates.length) * 100;
+      });
+      chart.update();
+    }
+
+    updateChart();
+  </script>
+</body>
+</html>
