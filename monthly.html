@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habit Tracker - Monthly</title>
+  <style>
+    body { font-family:'Poppins',sans-serif; background:linear-gradient(135deg,#fbc2eb 0%,#a6c1ee 100%); margin:0; padding:20px; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+    .tracker { width:100%; max-width:700px; background:#fff; padding:25px; border-radius:20px; box-shadow:0 8px 25px rgba(0,0,0,0.15); }
+    h1 { text-align:center; color:#d63384; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th,td { border:1px solid #ddd; padding:10px; text-align:center; }
+    th { background:#ff69b4; color:#fff; }
+    canvas { margin-top:30px; width:100%!important; max-height:350px; }
+    .nav-buttons { display:flex; gap:10px; justify-content:center; margin-top:20px; }
+    button { padding:10px 15px; border:none; background:#4CAF50; color:white; border-radius:5px; cursor:pointer; }
+    button:hover { background:#45a049; }
+  </style>
+</head>
+<body>
+  <div class="tracker">
+    <h1>🌸 Monthly Progress by Prayer Block 🌸</h1>
+    <table id="summaryTable">
+      <thead>
+        <tr><th>Prayer Block</th><th>Completion %</th></tr>
+      </thead>
+      <tbody id="summaryBody"></tbody>
+    </table>
+    <canvas id="monthlyChart"></canvas>
+    <div class="nav-buttons">
+      <button onclick="location.href='index.html'">Daily View</button>
+      <button onclick="location.href='weekly.html'">Weekly View</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Same habit groups as in your index.html
+    const habitGroups = {
+      "Fajr":["Tahajjud, Surah Baqrah, Quran, Fajr ","Health: yoga, breathing"],
+      "Dhuhr":["Study: daily complete 2 tasks", "Azlaan Homework and Arabbi", "Namaz, Surah Baqrah"],
+      "Asr":["Learn something Islamic new for 5 min","Parents: daily check-in calls","In-laws: respectful communication"],
+      "Maghrib":["Son: food, play, bedtime stories","Husband: meals, emotional bonding with communication"],
+      "Isha":["Plan next day before bed","Sleep: 6 hours at least"]
+    };
+    const prayerBlocks = Object.keys(habitGroups);
+
+    // Get past 28 days
+    function getPastDates(days){
+      let dates=[]; 
+      for(let i=0;i<days;i++){ 
+        let d=new Date(); 
+        d.setDate(d.getDate()-i); 
+        dates.push(d.toDateString()); 
+      }
+      return dates;
+    }
+    const monthDates=getPastDates(28);
+
+    // Calculate completion % per block (average of daily percentages)
+    function updateBlockPercentages(){
+      const blockPercentages={};
+      prayerBlocks.forEach(block=>{
+        let dailyPercents=[];
+        monthDates.forEach(date=>{
+          let completed=0,total=habitGroups[block].length;
+          habitGroups[block].forEach(habit=>{
+            if(localStorage.getItem(`${habit}-${date}`)==="true") completed++;
+          });
+          let percent=(completed/total)*100; // daily %
+          dailyPercents.push(percent);
+        });
+        const sum=dailyPercents.reduce((a,b)=>a+b,0);
+        blockPercentages[block]=sum/dailyPercents.length; // average %
+      });
+      return blockPercentages;
+    }
+
+    const blockPercentages=updateBlockPercentages();
+
+    // Fill summary table
+    const summaryBody=document.getElementById("summaryBody");
+    prayerBlocks.forEach(block=>{
+      const row=document.createElement("tr");
+      const tdBlock=document.createElement("td"); tdBlock.textContent=block;
+      const tdPercent=document.createElement("td"); tdPercent.textContent=blockPercentages[block].toFixed(1)+"%";
+      row.appendChild(tdBlock); row.appendChild(tdPercent);
+      summaryBody.appendChild(row);
+    });
+
+    // Chart.js bar chart
+    const ctx=document.getElementById("monthlyChart").getContext("2d");
+    new Chart(ctx,{
+      type:"bar",
+      data:{
+        labels:prayerBlocks,
+        datasets:[{
+          label:"Monthly Completion (%)",
+          data:prayerBlocks.map(b=>blockPercentages[b]),
+          backgroundColor:"rgba(255,105,180,0.7)",
+          borderRadius:12
+        }]
+      },
+      options:{
+        scales:{
+          y:{beginAtZero:true,max:100,ticks:{callback:v=>v+"%"}}
+        },
+        plugins:{legend:{display:false}}
+      }
+    });
+  </script>
+</body>
+</html>
