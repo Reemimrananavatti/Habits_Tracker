@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habit Tracker - Daily</title>
+  <style>
+    body { font-family:'Poppins',sans-serif; background:linear-gradient(135deg,#fbc2eb 0%,#a6c1ee 100%); margin:0; padding:20px; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+    .tracker { width:100%; max-width:700px; background:#fff; padding:25px; border-radius:20px; box-shadow:0 8px 25px rgba(0,0,0,0.15); }
+    h1 { text-align:center; color:#d63384; }
+    h2 { margin-top:20px; }
+    ul { list-style:none; padding:0; }
+    li { margin:8px 0; }
+    input[type="checkbox"] { transform:scale(1.3); accent-color:#ff69b4; }
+    textarea { width:100%; border-radius:10px; padding:10px; margin-top:10px; }
+    .section { padding:10px; border-radius:10px; margin-bottom:15px; }
+    .fajr{background:#e0f7fa;} .dhuhr{background:#fff9c4;} .asr{background:#c8e6c9;} .maghrib{background:#ffe0b2;} .isha{background:#d1c4e9;}
+    .nav-buttons{display:flex;gap:10px;justify-content:center;margin-top:20px;}
+    button{padding:10px 15px;border:none;background:#4CAF50;color:white;border-radius:5px;cursor:pointer;}
+    button:hover{background:#45a049;}
+  </style>
+</head>
+<body>
+  <div class="tracker">
+    <h1>🌸 Daily Habits 🌸</h1>
+    <div id="dailyChecklist"></div>
+    <h2>Yesterday’s Quantity</h2>
+    <textarea id="yesterdayNotes" rows="4" placeholder="Write down yesterday’s progress..."></textarea>
+    <div class="nav-buttons">
+      <button onclick="location.href='weekly.html'">Weekly Progress</button>
+      <button onclick="location.href='monthly.html'">Monthly Progress</button>
+    </div>
+  </div>
+
+  <script>
+    const habitGroups = {
+      "Fajr":["Tahajjud, Surah Baqrah, Quran, Fajr ","Health: yoga, breathing"],
+      "Dhuhr":["Study: daily complete 2 tasks", "Azlaan Homework and Arabbi", "Namaz, Surah Baqrah"],
+      "Asr":["Learn something Islamic new for 5 min","Parents: daily check-in calls","In-laws: respectful communication"],
+      "Maghrib":["Son: food, play, bedtime stories","Husband: meals, emotional bonding with communication"],
+      "Isha":["Plan next day before bed","Sleep: 6 hours at least"]
+    };
+    const colors={Fajr:"fajr",Dhuhr:"dhuhr",Asr:"asr",Maghrib:"maghrib",Isha:"isha"};
+    const today=new Date().toDateString();
+    const yesterday=new Date(); yesterday.setDate(yesterday.getDate()-1);
+    const yesterdayKey="notes-"+yesterday.toDateString();
+
+    const dailyDiv=document.getElementById("dailyChecklist");
+    Object.keys(habitGroups).forEach(prayer=>{
+      const section=document.createElement("div");
+      section.className="section "+colors[prayer];
+      const title=document.createElement("h3"); title.textContent=prayer; section.appendChild(title);
+      const ul=document.createElement("ul");
+      habitGroups[prayer].forEach(habit=>{
+        const li=document.createElement("li");
+        const checkbox=document.createElement("input"); checkbox.type="checkbox"; checkbox.dataset.habit=habit; checkbox.dataset.date=today;
+        if(localStorage.getItem(`${habit}-${today}`)==="true") checkbox.checked=true;
+        checkbox.addEventListener("change",()=>{localStorage.setItem(`${habit}-${today}`,checkbox.checked);});
+        li.textContent=habit+" "; li.appendChild(checkbox); ul.appendChild(li);
+      });
+      section.appendChild(ul); dailyDiv.appendChild(section);
+    });
+
+    const notesBox=document.getElementById("yesterdayNotes");
+    notesBox.value=localStorage.getItem(yesterdayKey)||"";
+    notesBox.addEventListener("input",()=>{localStorage.setItem(yesterdayKey,notesBox.value);});
+
+    // Auto-clear at 12:00 am (midnight)
+    function scheduleResetAtMidnight(){
+      const now=new Date();
+      let resetTime=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,0); // next midnight
+      const msUntilReset=resetTime-now;
+      setTimeout(()=>{
+        const habits=Object.values(habitGroups).flat();
+        habits.forEach(habit=>{localStorage.removeItem(`${habit}-${new Date().toDateString()}`);});
+        location.reload();
+        scheduleResetAtMidnight();
+      },msUntilReset);
+    }
+    scheduleResetAtMidnight();
+
+  </script>
+</body>
+</html>
